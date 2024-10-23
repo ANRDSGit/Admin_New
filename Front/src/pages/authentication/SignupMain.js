@@ -50,7 +50,7 @@ const SignupMain = () => {
             await axios.post(`${apiUrl}/signup`, formData);
             alert('A verification email has been sent to your email address.');
             // Redirect to login page after successful sign up
-            navigate('/login');
+            navigate('/patients');
         } catch (error) {
             setError('Error signing up. Please try again.');
             console.error('Error signing up', error);

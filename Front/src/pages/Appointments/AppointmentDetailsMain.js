@@ -25,6 +25,9 @@ import {
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable'; // Import autoTable plugin for better table formatting
+import logo from '../../assets/images/logos/logo2.png';   // Import jsPDF for PDF generation
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const locales = {
@@ -229,6 +232,54 @@ const Appointments = () => {
         setLoading(false);
       });
   };
+
+
+    // Function to generate a PDF report for appointments
+    const generatePDF = (appointmentType) => {
+      const filteredAppointments = appointments.filter(
+        (apt) => apt.appointmentType === appointmentType
+      );
+    
+      const doc = new jsPDF();
+    
+      // Add logo and title
+      doc.addImage(logo, 'PNG', 10, 10, 30, 30); // Add your logo (adjust size and position)
+      doc.setFontSize(22);
+      doc.text('Patient Pulse - Appointment Report', 50, 25);
+    
+      doc.setFontSize(18);
+      doc.text(
+        `${appointmentType.charAt(0).toUpperCase() + appointmentType.slice(1)} Appointments`,
+        14,
+        50
+      );
+    
+      // Add appointment data to a table
+      const tableColumn = ['Patient', 'Date', 'Time', 'Type'];
+      const tableRows = filteredAppointments.map((apt) => [
+        apt.patientName || 'N/A',
+        apt.date,
+        apt.time,
+        apt.appointmentType.charAt(0).toUpperCase() + apt.appointmentType.slice(1),
+      ]);
+    
+      // Generate the table using autoTable plugin
+      doc.autoTable({
+        startY: 60,
+        head: [tableColumn],
+        body: tableRows,
+        styles: { fontSize: 12, halign: 'center', valign: 'middle' },
+        headStyles: { fillColor: [33, 150, 243], textColor: [255, 255, 255] },
+      });
+    
+      // Footer with branding
+      const pageHeight = doc.internal.pageSize.height;
+      doc.setFontSize(10);
+      doc.text('© 2024 Patient Pulse. All Rights Reserved.', 14, pageHeight - 10);
+    
+      // Save the PDF with a dynamic filename
+      doc.save(`${appointmentType}_appointments_${new Date().toISOString().slice(0, 10)}.pdf`);
+    };
 
   return (
     <Box sx={{ padding: { xs: 2, md: 4 }, maxWidth: '1200px', margin: 'auto' }}>
@@ -527,7 +578,14 @@ const Appointments = () => {
         </Alert>
       </Snackbar>
 
-
+      <Box sx={{ mt:3, mb: 2, display: 'flex', justifyContent: 'space-between' }}>
+        <Button variant="contained" color="primary" onClick={() => generatePDF('physical')}>
+          Download Physical Appointments PDF
+        </Button>
+        <Button variant="contained" color="primary" onClick={() => generatePDF('remote')}>
+          Download Remote Appointments PDF
+        </Button>
+      </Box>
 
       {/* Calendar to display appointments */}
       <Box sx={{ mt: 4 }}>

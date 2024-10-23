@@ -113,6 +113,18 @@ router.post('/signup', async (req, res) => {
     if (patient) return res.status(400).send('Patient already exists');
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Find the last user and extract the latest user id
+    const lastPatient = await Patient.findOne().sort({ createdAt: -1 });
+    let newUserId = 'U001'; // Default for the first user
+
+    if (lastPatient && lastPatient.userId) {
+      const lastUserId = lastPatient.userId; // e.g., 'U001'
+      const lastUserNumber = parseInt(lastUserId.substring(1)); // Extract number part (001)
+      const newUserNumber = lastUserNumber + 1; // Increment by 1
+      newUserId = `U${newUserNumber.toString().padStart(3, '0')}`; // e.g., 'U002'
+    }
+
     patient = new Patient({
       name,
       dob,
@@ -121,8 +133,10 @@ router.post('/signup', async (req, res) => {
       number,
       email,
       password: hashedPassword,
+      userId: newUserId, // Add the userId to the patient document
       isVerified: false,
     });
+
     await patient.save();
 
     // Generate email verification token
@@ -170,6 +184,7 @@ router.post('/signup', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 // ** Email Verification Route ** //
@@ -469,6 +484,53 @@ router.get('/appointments', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Error fetching appointments' });
   }
 });
+
+
+
+// Helper function to group appointments by day of the week
+const getAppointmentsPerDay = (appointments) => {
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const appointmentCounts = new Array(7).fill(0); // Initialize array for each day of the week
+
+  appointments.forEach((appointment) => {
+    const day = new Date(appointment.date).getDay(); // Get the day of the week (0 for Sunday, 6 for Saturday)
+    appointmentCounts[day]++;
+  });
+
+  return appointmentCounts;
+};
+
+// Route to get the number of appointments per day of the week
+router.get('/appointments/per-day', async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ status: 'active' }); // Only active appointments
+    const appointmentsPerDay = getAppointmentsPerDay(appointments);
+    res.json(appointmentsPerDay);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching appointments per day', error });
+  }
+});
+
+
+// Controller to get gender count
+const getPatientGenderCount = async (req, res) => {
+  try {
+      const maleCount = await Patient.countDocuments({ gender: 'Male' });
+      const femaleCount = await Patient.countDocuments({ gender: 'Female' });
+      const otherCount = await Patient.countDocuments({ gender: 'Other' });
+
+      res.status(200).json({
+          male: maleCount,
+          female: femaleCount,
+          other: otherCount,
+      });
+  } catch (error) {
+      res.status(500).json({ message: 'Error fetching patient gender count', error });
+  }
+};
+
+// Add route to get gender counts
+router.get('/patients/gender-count', getPatientGenderCount);
 
 
 module.exports = router;
