@@ -56,6 +56,7 @@ const generateTimeSlots = () => {
 const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
+  const [users, setUsers] = useState([]);
   const [newAppointment, setNewAppointment] = useState({
     date: '',
     time: '',
@@ -76,26 +77,23 @@ const Appointments = () => {
   useEffect(() => {
     setLoading(true);
     axios
-      .get(`${apiUrl}/appointments/user`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        setAppointments(res.data);
-      })
-      .catch((err) => {
-        setError('Error fetching appointments');
-        console.error(err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      .all([
+        axios.get(`${apiUrl}/appointments/all`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${apiUrl}/patients`, { headers: { Authorization: `Bearer ${token}` } }),
+      ])
+      .then(axios.spread((appointmentsRes, usersRes) => {
+        setAppointments(appointmentsRes.data);
+        setUsers(usersRes.data);
+      }))
+      .catch((err) => setError('Error fetching data'))
+      .finally(() => setLoading(false));
   }, [token]);
 
   useEffect(() => {
     if (newAppointment.date || (selectedAppointment && selectedAppointment.date)) {
       const slots = generateTimeSlots();
       const currentDate = newAppointment.date || selectedAppointment.date;
-  
+
       // Fetch all appointments for the selected date, regardless of the user
       axios
         .get(`${apiUrl}/appointments?date=${currentDate}`, {
@@ -103,14 +101,14 @@ const Appointments = () => {
         })
         .then((res) => {
           const bookedSlots = res.data.map((apt) => apt.time); // Collect booked time slots for all users
-  
+
           // If editing an appointment, allow the current slot to remain available
           const excludeCurrentAppointment = selectedAppointment ? selectedAppointment._id : null;
-  
-          const available = slots.filter((slot) => !bookedSlots.includes(slot) || 
+
+          const available = slots.filter((slot) => !bookedSlots.includes(slot) ||
             res.data.some((apt) => apt._id === excludeCurrentAppointment && apt.time === slot)
           );
-  
+
           setAvailableSlots(available);
         })
         .catch((err) => {
@@ -118,14 +116,14 @@ const Appointments = () => {
         });
     }
   }, [newAppointment.date, selectedAppointment?.date, appointments, selectedAppointment]);
-  
+
   // Handle creation of a new appointment
   const handleCreate = () => {
-    if (!newAppointment.date || !newAppointment.time) {
-      setError('Please select both date and time for the appointment.');
+    if (!newAppointment.date || !newAppointment.time || !newAppointment.patientId) {
+      setError('Please select a patient, date, and time for the appointment.');
       return;
     }
-
+  
     setLoading(true);
     axios
       .post(`${apiUrl}/appointments`, newAppointment, {
@@ -133,9 +131,9 @@ const Appointments = () => {
       })
       .then((res) => {
         setAppointments([...appointments, res.data]);
-        setNewAppointment({ date: '', time: '', appointmentType: 'physical' });
+        setNewAppointment({ patientName: '', patientId: '', date: '', time: '', appointmentType: 'physical' });
         setError('');
-        setSuccessMessage('Appointment created successfully'); // Set success message
+        setSuccessMessage('Appointment created successfully');
       })
       .catch((err) => {
         setError('Error creating appointment');
@@ -145,6 +143,7 @@ const Appointments = () => {
         setLoading(false);
       });
   };
+  
 
   // Handle selection of an appointment from the calendar
   const handleSelectAppointment = (appointment) => {
@@ -241,6 +240,27 @@ const Appointments = () => {
             <Typography variant="h6">Create New Appointment</Typography>
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid item xs={12} md={4}>
+                <TextField
+                  select
+                  label="Patient"
+                  value={newAppointment.patientId} // Use patientId as the value
+                  onChange={(e) => {
+                    const selectedPatient = users.find(user => user._id === e.target.value);
+                    setNewAppointment({
+                      ...newAppointment,
+                      patientId: selectedPatient._id,
+                      patientName: selectedPatient.name,
+                    });
+                  }}
+                  fullWidth
+                >
+                  {users.map((patient) => (
+                    <MenuItem key={patient._id} value={patient._id}>
+                      {patient.name}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
                 <TextField
                   label="Date"
                   type="date"

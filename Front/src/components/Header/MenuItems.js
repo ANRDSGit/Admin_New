@@ -86,44 +86,21 @@ const MenuItems = (props) => {
             <li className={location.pathname === "/" ? "menu-active" : ""}>
                 <Link to="/">Home</Link>
             </li>
-            <li className={location.pathname === "/appointments" || location.pathname === "/course" || location.pathname === "/events" ? "menu-active" : ""}>
-                <Link to="#" className={page ? "hash menu-active" : "hash"} onClick={() => { openMobileMenu('page'); }}>
-                    Services
-                    <span className="arrow "></span>
-                </Link>
-                <ul className={page ? "sub-menu sub-menu-open" : "sub-menu"}>
-
-                    {isLoggedIn ? (
-                        <>
-                            <li className={location.pathname === "/appointments" ? "menu-active" : ""}>
-                                <Link to="/appointments">Appointments</Link>
-                            </li>
-                            <li>
-                                <a href="https://video-convo-one.vercel.app/mymeetings" target="_blank" rel="noopener noreferrer">Conference</a>
-                            </li>
-                        </>
-                    ) : (
-                        <li className={location.pathname === "/login" ? "menu-active" : ""}>
-                            <Link to="/login">Login</Link>
-                        </li>
-                    )}
-                </ul>
+            <li className={location.pathname === "/patients" ? "menu-active" : ""}>
+                <Link to="/patients">Patients</Link>
             </li>
-
-            <li className={location.pathname === '/about' ? 'menu-active' : ''}>
-                <Link to="/about">About</Link>
+            <li className={location.pathname === "/appointments" ? "menu-active" : ""}>
+                <Link to="/appointments">Appointments</Link>
             </li>
-
-            <li className={location.pathname === '/contact' ? 'menu-active' : ''}>
-                <Link to="/contact">Contact</Link>
+            <li className={location.pathname === "/records" ? "menu-active" : ""}>
+                <Link to="/appointments">Records</Link>
             </li>
-
+            <li>
+                <a href="https://video-convo-one.vercel.app/mymeetings" target="_blank" rel="noopener noreferrer">Conference</a>
+            </li>
             {/* Conditionally render Profile or Login based on login status */}
             {isLoggedIn ? (
                 <>
-                    <li className={location.pathname === "/profile" ? "menu-active" : ""}>
-                        <Link to="/profile">Profile</Link>
-                    </li>
                     <li>
                         <Link to="" onClick={handleLogout}>Logout</Link>
                     </li>

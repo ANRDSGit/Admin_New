@@ -23,6 +23,7 @@ import Signup from '../pages/authentication/signup';
 import Contact from '../pages/contact';
 import Error from '../pages/404';
 import LoadTop from '../components/ScrollTop/LoadTop'
+import Patients from "../pages/Patient/patient-details";
 
 
 const App = () => {
@@ -55,7 +56,8 @@ const App = () => {
                     <Route path="/event-sidebar" element={<EventSidebar />} />
                     <Route path="/blog" exact element={<Blog />} />
                     <Route path="/appointments" element={<Appointments />} />
-                    <Route path="/profile" exact element={<Patient />} />
+                    <Route path="/profile/:userId" exact element={<Patient />} />
+                    <Route path="/patients" exact element={<Patients />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/contact" element={<Contact />} />

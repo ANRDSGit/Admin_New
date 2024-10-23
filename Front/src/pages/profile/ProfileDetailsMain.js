@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom'; // Import useParams
 import CountUp from 'react-countup';
 import VisibilitySensor from 'react-visibility-sensor';
 import { ToastContainer, toast } from 'react-toastify';
@@ -11,56 +11,50 @@ import countIcon1 from '../../assets/images/profile/2.png';
 import countIcon2 from '../../assets/images/profile/3.png';
 import countIcon3 from '../../assets/images/profile/4.png';
 import profileicon from '../../assets/images/instructor/1.jpg';
+import fingerprintAnimation from '../../assets/images/fingerprint-animation.gif'; // Replace with your fingerprint animation asset
 
-const InstructorDetailsMain = () => {
+const ProfileDetailsMain = () => {
+    const { userId } = useParams(); // Extract the userId from the URL
     const [patient, setPatient] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const [totalRemoteAppointments, setTotalRemoteAppointments] = useState(0);
     const [totalPhysicalAppointments, setTotalPhysicalAppointments] = useState(0);
+    const [hasFingerprint, setHasFingerprint] = useState(false); // New state to track if fingerprint exists
     const [state, setState] = useState(true);
-
 
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
     useEffect(() => {
         const fetchTotalRemoteAppointments = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const response = await axios.get(`${apiUrl}/user/remoteCount`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const response = await axios.get(`${apiUrl}/user/${userId}/remoteCount`);
                 setTotalRemoteAppointments(response.data.count);
             } catch (error) {
                 console.error("Error fetching total remote appointments:", error);
             }
         };
         fetchTotalRemoteAppointments();
-    }, []);
+    }, [userId]);
 
     useEffect(() => {
         const fetchTotalPhysicalAppointments = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const response = await axios.get(`${apiUrl}/user/physicalCount`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const response = await axios.get(`${apiUrl}/user/${userId}/physicalCount`);
                 setTotalPhysicalAppointments(response.data.count);
             } catch (error) {
                 console.error("Error fetching total physical appointments:", error);
             }
         };
         fetchTotalPhysicalAppointments();
-    }, []);
+    }, [userId]);
 
     useEffect(() => {
         const fetchPatientProfile = async () => {
             try {
-                const token = localStorage.getItem('token');
-                const response = await axios.get(`${apiUrl}/profile`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const response = await axios.get(`${apiUrl}/profile/${userId}`); // Pass userId from the URL
                 setPatient(response.data);
+                setHasFingerprint(response.data.hasFingerprint || false); // Assuming the profile response contains a `hasFingerprint` field
             } catch (error) {
                 console.error('Error fetching patient profile', error);
             } finally {
@@ -68,23 +62,29 @@ const InstructorDetailsMain = () => {
             }
         };
         fetchPatientProfile();
-    }, []);
+    }, [userId]);
 
-    const handleLogout = () => {
+    const handleAddFingerprint = () => {
         Swal.fire({
-            title: 'Are you sure?',
-            text: 'You will be logged out!',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, log me out!',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                localStorage.removeItem('token');
-                navigate('/login');
-                toast.success('Successfully logged out!');
-            }
+            title: 'Add Fingerprint',
+            html: `
+                <div>
+                    <p>Please place your hand on the sensor</p>
+                    <img src="${fingerprintAnimation}" alt="Fingerprint Animation" style="width: 200px; height: auto;" />
+                </div>
+            `,
+            showConfirmButton: false,
+            timer: 5000, // The animation or detection duration
+        }).then(() => {
+            // Make API call to register fingerprint
+            axios.post(`${apiUrl}/register-fingerprint`, { userId })
+                .then(() => {
+                    toast.success('Fingerprint added successfully!');
+                    setHasFingerprint(true);
+                })
+                .catch(() => {
+                    toast.error('Failed to add fingerprint. Please try again.');
+                });
         });
     };
 
@@ -100,11 +100,9 @@ const InstructorDetailsMain = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    const token = localStorage.getItem('token');
                     await axios.post(
                         `${apiUrl}/request-delete-account`,
-                        {},
-                        { headers: { Authorization: `Bearer ${token}` } }
+                        { userId }, // Include userId in the body or as part of the route if needed
                     );
                     toast.success('Deletion email sent! Please confirm via your inbox.');
                     navigate('/signup');
@@ -114,7 +112,6 @@ const InstructorDetailsMain = () => {
             }
         });
     };
-
 
     const calculateAge = (dateOfBirth) => {
         const birthDate = new Date(dateOfBirth);
@@ -181,9 +178,12 @@ const InstructorDetailsMain = () => {
                             </div>
 
                             <div className="profile-button-container">
-                                <button className="follows" onClick={handleLogout}>LogOut</button>
+                                {!hasFingerprint ? (
+                                    <button className="follows" onClick={handleAddFingerprint}>Add Fingerprint</button>
+                                ) : (
+                                    <button className="follows" disabled>Fingerprint Added</button>
+                                )}
                                 <button className="follows delete" onClick={handleDeleteAccount}>Delete Profile</button>
-
                             </div>
                         </div>
                     </div>
@@ -194,4 +194,4 @@ const InstructorDetailsMain = () => {
     );
 };
 
-export default InstructorDetailsMain;
+export default ProfileDetailsMain;

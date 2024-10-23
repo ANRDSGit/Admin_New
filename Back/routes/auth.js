@@ -240,108 +240,102 @@ function authenticateToken(req, res, next) {
   }
 }
 
+
+router.get('/patients', authenticateToken, async (req, res) => {
+  const patients = await Patient.find();
+  res.send(patients);
+});
+
+
 // ** Patient Profile Route ** //
-router.get('/profile', authenticateToken, async (req, res) => {
+// Route to get patient profile by userId
+router.get('/profile/:userId', async (req, res) => {
+  const { userId } = req.params;
+
   try {
-    const patient = await Patient.findById(req.patient.id);
+    const patient = await Patient.findOne({ userId }); // Find by custom userId
     if (!patient) return res.status(404).json({ message: 'Patient not found' });
+    
     res.json(patient);
   } catch (error) {
+    console.error('Error fetching patient profile:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
 
-router.get('/user/physicalCount', authenticateToken, async (req, res) => {
+// Route to get count of physical appointments by userId// Route to count physical appointments
+router.get('/user/:userId/physicalCount', async (req, res) => {
+  const { userId } = req.params;
+
   try {
-
-    const physicalCount = await Appointment.countDocuments({ 
-      patientName: req.patient.name, // Use patientId from the authenticated token
-      appointmentType: 'physical' // Filter for physical appointments only
-    });
-    
-    res.status(200).json({ count: physicalCount });
-  } catch (error) {
-    console.error('Error fetching physical appointments', error);
-    res.status(500).json({ error: 'Error fetching physical appointments' });
-  }
-});
-router.get('/user/remoteCount', authenticateToken, async (req, res) => {
-  try {
-
-    const physicalCount = await Appointment.countDocuments({ 
-      patientName: req.patient.name, // Use patientId from the authenticated token
-      appointmentType: 'remote' // Filter for remote appointments only
-    });
-    
-    res.status(200).json({ count: physicalCount });
-  } catch (error) {
-    console.error('Error fetching remote appointments', error);
-    res.status(500).json({ error: 'Error fetching remote appointments' });
-  }
-});
-
-
-// ** Delete Account Request Route ** //
-router.post('/request-delete-account', authenticateToken, async (req, res) => {
-  try {
-    const patient = await Patient.findById(req.patient.id);
+    const patient = await Patient.findOne({ userId }); // Find by custom userId
     if (!patient) return res.status(404).json({ message: 'Patient not found' });
 
-    const deleteToken = jwt.sign({ id: patient._id }, SECRET_KEY, { expiresIn: '1h' });
-    const deleteUrl = `${process.env.BASE_URL}/confirm-delete-account?token=${deleteToken}`;
-
-    const mailOptions = {
-      from: process.env.GMAIL_USER,
-      to: patient.email,
-      subject: 'Action Required: Confirm Your Account Deletion',
-      html: `
-        <p>Dear ${patient.name},</p>
-    
-        <p>We hope this message finds you well.</p>
-    
-        <p>We have received a request to delete your account from our system. To proceed with this request, please confirm the account deletion by clicking the button below:</p>
-    
-        <a href="${deleteUrl}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; border-radius: 5px;">
-          Confirm Account Deletion
-        </a>
-    
-        <p>If you did not request this action, please ignore this message, and no changes will be made to your account.</p>
-    
-        <p>Should you have any questions or need further assistance, feel free to contact our support team.</p>
-    
-        <p>Thank you for choosing Patient Pulse.</p>
-    
-        <p>Best regards,<br/>Team Patient Pulse</p>
-      `,
-    };
-    
-    
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        return res.status(500).json({ error: 'Failed to send confirmation email' });
-      }
-      res.status(200).json({ message: 'Delete confirmation email sent' });
+    const physicalCount = await Appointment.countDocuments({ 
+      patientName: patient.name, // Use the patientName from the retrieved patient document
+      appointmentType: 'physical' // Filter for physical appointments only
     });
+
+    res.status(200).json({ count: physicalCount });
   } catch (error) {
+    console.error('Error fetching physical appointments:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// ** Confirm Account Deletion Route ** //
-router.get('/confirm-delete-account', async (req, res) => {
-  const { token } = req.query;
+// Route to count remote appointments
+router.get('/user/:userId/remoteCount', async (req, res) => {
+  const { userId } = req.params;
 
   try {
-    const decoded = jwt.verify(token, SECRET_KEY);
-    let patient = await Patient.findById(decoded.id);
-    if (!patient) return res.status(404).send('Patient not found');
+    const patient = await Patient.findOne({ userId }); // Find by custom userId
+    if (!patient) return res.status(404).json({ message: 'Patient not found' });
 
-    await Patient.findByIdAndDelete(decoded.id);
-    res.send('Account deleted successfully.');
+    const remoteCount = await Appointment.countDocuments({ 
+      patientName: patient.name, // Use the patientName from the retrieved patient document
+      appointmentType: 'remote' // Filter for remote appointments only
+    });
+
+    res.status(200).json({ count: remoteCount });
   } catch (error) {
-    res.status(400).send('Invalid or expired token');
+    console.error('Error fetching remote appointments:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+
+
+// Get all patients
+router.get('/patients',authenticateToken, async (req, res) => {
+  try {
+      const patients = await Patient.find();
+      res.json(patients);
+  } catch (error) {
+      res.status(500).json({ message: error.message });
+  }
+});
+
+// Search patients by email
+router.get('/patients/search', authenticateToken, async (req, res) => {
+  try {
+      const email = req.query.email;
+      if (!email) {
+          return res.status(400).json({ message: 'Email query parameter is required' });
+      }
+
+      // Find the patient by email
+      const patients = await Patient.find({ email: { $regex: email, $options: 'i' } }); // Case-insensitive search
+
+      if (patients.length === 0) {
+          return res.status(404).json({ message: 'No patients found' });
+      }
+
+      res.json(patients);
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Server error' });
   }
 });
 
@@ -407,43 +401,31 @@ router.post('/contact', async (req, res) => {
 });
 
 
-// Create Appointment
 router.post('/appointments', authenticateToken, async (req, res) => {
-  const { date, time, appointmentType } = req.body;
-
-  // Validate appointmentType and required fields
-  if (!['physical', 'remote'].includes(appointmentType)) {
-    return res.status(400).json({ message: 'Invalid appointment type' });
-  }
-  if (!date || !time) {
-    return res.status(400).json({ message: 'Date and time are required' });
-  }
-
   try {
+    const { date, time, appointmentType, patientId, patientName } = req.body;
+
+    const existingAppointment = await Appointment.findOne({ date, time, patientId });
+    if (existingAppointment) {
+      return res.status(400).send('Time slot already booked for this patient.');
+    }
+
     const appointment = new Appointment({
-      patientId: req.patient.id, // Automatically associate with logged-in user
-      patientName: req.patient.name, // Get patientName from token
       date,
       time,
       appointmentType,
+      patientId,
+      patientName,
     });
 
     await appointment.save();
     res.status(201).json(appointment);
   } catch (error) {
-    res.status(500).json({ error: 'Error creating appointment' });
+    console.error(error);
+    res.status(500).send('Error creating appointment');
   }
 });
 
-// Get All Appointments for Logged-in User
-router.get('/appointments/user', authenticateToken, async (req, res) => {
-  try {
-    const appointments = await Appointment.find({ patientName: req.patient.name });
-    res.status(200).json(appointments);
-  } catch (error) {
-    res.status(500).json({ error: 'Error fetching appointments' });
-  }
-});
 
 // Update Appointment
 router.put('/appointments/:id', authenticateToken, async (req, res) => {
@@ -464,6 +446,13 @@ router.delete('/appointments/:id', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Error deleting appointment' });
   }
 });
+
+//Get All appointments
+router.get("/appointments/all", authenticateToken, async (req, res) => {
+  const appointments = await Appointment.find();
+  res.send(appointments);
+});
+
 
 // Get All Appointments for a specific date (for checking availability)
 router.get('/appointments', authenticateToken, async (req, res) => {
