@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Patient = require('../models/Patients');
 const Appointment = require('../models/Appointments'); // Ensure the path is correct
+const Admin = require('../models/Admin'); // Ensure the path is correct
 const nodemailer = require('nodemailer');// Import nodemailer
 require('dotenv').config();
  
@@ -189,42 +190,55 @@ router.get('/verify-email', async (req, res) => {
   }
 });
 
-// ** Login Route ** //
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
 
-  try {
-    let patient = await Patient.findOne({ email });
-    if (!patient) return res.status(400).send('Invalid email or password');
-    if (!patient.isVerified) return res.status(400).send('Please verify your email first');
-
-    const isMatch = await bcrypt.compare(password, patient.password);
-    if (!isMatch) return res.status(400).send('Invalid email or password');
-
-    const token = jwt.sign({ id: patient._id, name: patient.name }, SECRET_KEY, { expiresIn: '1h' });
-    sendLoginEmail(patient.email, patient.name);
-
-    res.status(200).json({
-      token,
-      user: { id: patient._id, name: patient.name, email: patient.email },
-      message: 'Login successful'
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+  // Create a default admin user
+  async function createDefaultAdmin() {
+    const adminExists = await Admin.findOne({ username: 'admin' });
+    if (!adminExists) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      const admin = new Admin({ username: 'admin', password: hashedPassword });
+      await admin.save();
+      console.log('Default admin created: admin/admin123');
+    }
   }
+  
+  createDefaultAdmin();
+
+
+router.post('/admin/login', async (req, res) => {
+  const { username, password } = req.body;
+  const admin = await Admin.findOne({ username });
+
+  if (!admin) {
+    return res.status(400).send({ message: 'Invalid credentials' });
+  }
+
+  const isMatch = await bcrypt.compare(password, admin.password);
+  if (!isMatch) {
+    return res.status(400).send({ message: 'Invalid credentials' });
+  }
+
+  const token = jwt.sign({ id: admin._id }, SECRET_KEY, { expiresIn: '1h' });
+  res.send({ token });
 });
 
-// ** Middleware for Token Authentication ** //
-const authenticateToken = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Unauthorized access' });
+// Middleware to authenticate JWT
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-  jwt.verify(token, SECRET_KEY, (err, patient) => {
-    if (err) return res.status(403).json({ message: 'Invalid token' });
-    req.patient = patient;
+  if (!token) {
+    return res.status(401).send({ message: 'Access denied' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY);
+    req.user = decoded;
     next();
-  });
-};
+  } catch (err) {
+    res.status(403).send({ message: 'Invalid token' });
+  }
+}
 
 // ** Patient Profile Route ** //
 router.get('/profile', authenticateToken, async (req, res) => {

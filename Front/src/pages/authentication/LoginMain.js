@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
 const LoginMain = () => {
-    const [credentials, setCredentials] = useState({ email: '', password: '' });
+    const [credentials, setCredentials] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
@@ -17,7 +17,7 @@ const LoginMain = () => {
         e.preventDefault();
         setError(''); // Clear previous errors
         try {
-            const response = await axios.post(`${apiUrl}/login`, credentials);
+            const response = await axios.post(`${apiUrl}/admin/login`, credentials);
             localStorage.setItem('token', response.data.token); // Store JWT token
             navigate('/'); // Redirect to appointments page
         } catch (error) {
@@ -35,7 +35,6 @@ const LoginMain = () => {
                                 <form onSubmit={handleSubmit}>
                                     <div className="login-top">
                                         <h3>Login</h3>
-                                        <p>Don't have an account yet? <a href="/signup">Sign up for free</a></p>
                                     </div>
 
                                     {error && (
@@ -45,13 +44,13 @@ const LoginMain = () => {
                                     )}
 
                                     <p>
-                                        <label>Email</label>
+                                        <label>UserName</label>
                                         <input
-                                            placeholder="Email"
-                                            type="email"
-                                            id="email"
-                                            name="email"
-                                            value={credentials.email}
+                                            placeholder="username"
+                                            type="text"
+                                            id="text"
+                                            name="username"
+                                            value={credentials.username}
                                             onChange={handleChange}
                                             required
                                         />
@@ -68,9 +67,7 @@ const LoginMain = () => {
                                             required
                                         />
                                     </p>
-                                    <div className="back-check-box">
-                                        <p>Forget password?</p>
-                                    </div>
+                                    
                                     <button type="submit" id="button" name="submit">
                                         LogIn 
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-arrow-right">
