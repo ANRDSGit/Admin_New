@@ -165,7 +165,7 @@ const PatientDetailsMain = () => {
                 Generate Report
             </Button>
 
-            <List style={{ marginTop: '20px' ,marginBottom:'30px'}}>
+            <List style={{ marginTop: '20px' ,marginBottom:'150px'}}>
                 {patients.map((patient) => (
                     <React.Fragment key={patient._id}>
                         <ListItem button onClick={() => handlePatientClick(patient.email)}>
