@@ -32,7 +32,7 @@ const InstructorDetails = () => {
                 </div>
             </div>
 
-            <Footer />
+            
 
         </body>
     );

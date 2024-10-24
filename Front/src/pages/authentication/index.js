@@ -1,6 +1,5 @@
 import React from 'react';
 import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import Breadcrumb from '../../components/Breadcrumb';
 import InstructorMain from './InstructorMain';
 import ScrollToTop from '../../components/ScrollTop';
@@ -31,9 +30,6 @@ const Instructor = () => {
                     {/* scrolltop-end */}
                 </div>
             </div>
-
-            <Footer />
-
         </>
     );
 }

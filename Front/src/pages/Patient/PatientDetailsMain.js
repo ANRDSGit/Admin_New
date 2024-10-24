@@ -142,7 +142,7 @@ const PatientDetailsMain = () => {
 
 
     return (
-        <div className="container pt---30 pb---30">
+        <div className="container pt---30 pb---50">
             <ToastContainer />
 
             <TextField
@@ -151,6 +151,7 @@ const PatientDetailsMain = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 variant="outlined"
                 fullWidth
+                autoFocus="false"
             />
 
             <Button variant="contained" color="primary" onClick={handleSearch} style={{ marginTop: '10px' }}>
@@ -164,7 +165,7 @@ const PatientDetailsMain = () => {
                 Generate Report
             </Button>
 
-            <List style={{ marginTop: '20px' }}>
+            <List style={{ marginTop: '20px' ,marginBottom:'30px'}}>
                 {patients.map((patient) => (
                     <React.Fragment key={patient._id}>
                         <ListItem button onClick={() => handlePatientClick(patient.email)}>

@@ -8,9 +8,6 @@ const HomeThreeMain =() => {
 			<>
 				<div className="react-wrapper">
             		<div className="react-wrapper-inner">
-						{/* BannerSection-start */}
-						<HomeBanner />
-						{/* BannerSection-start */}
 
 						{/* About-area-start */}
 						<About />

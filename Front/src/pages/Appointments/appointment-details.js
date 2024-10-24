@@ -1,6 +1,5 @@
 import React from 'react';
 import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import Breadcrumb from '../../components/Breadcrumb';
 import AppointmentDetailsMain from './AppointmentDetailsMain';
 import ScrollToTop from '../../components/ScrollTop';
@@ -31,8 +30,6 @@ const InstructorDetails = () => {
                     {/* scrolltop-end */}
                 </div>
             </div>
-
-            <Footer />
 
         </body>
     );
