@@ -84,7 +84,7 @@ const MenuItems = (props) => {
     return (
         <>
             <li className={location.pathname === "/home" ? "menu-active" : ""}>
-                <Link to="/home">Home</Link>
+                <Link to="/">Home</Link>
             </li>
             <li className={location.pathname === "/patients" ? "menu-active" : ""}>
                 <Link to="/patients">Patients</Link>

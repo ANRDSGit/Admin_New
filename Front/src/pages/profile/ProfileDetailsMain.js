@@ -7,6 +7,25 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Swal from 'sweetalert2';
 
+import {
+    Box,
+    Typography,
+    Button,
+    TextField,
+    CircularProgress,
+    Grid,
+    Paper,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    MenuItem,
+    Select,
+    InputLabel,
+    FormControl,
+  } from "@mui/material";
+
 import countIcon1 from '../../assets/images/profile/2.png';
 import countIcon2 from '../../assets/images/profile/3.png';
 import countIcon3 from '../../assets/images/profile/4.png';
@@ -22,6 +41,9 @@ const ProfileDetailsMain = () => {
     const [totalPhysicalAppointments, setTotalPhysicalAppointments] = useState(0);
     const [hasFingerprint, setHasFingerprint] = useState(false); // New state to track if fingerprint exists
     const [state, setState] = useState(true);
+    const [isAdded, setIsAdded] = useState(false);
+    const [confirmDialogOpen2, setConfirmDialogOpen2] = useState(false);
+    const [patientFinger, setPatientFinger] = useState(null);
 
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
 
@@ -87,6 +109,46 @@ const ProfileDetailsMain = () => {
                 });
         });
     };
+
+    const handleAddFinger = (id) => {
+        setPatientFinger(id);
+        setIsAdded(false);
+
+        const fingerPrintId = id.split("U00")[1];
+        const fingerprintCount = parseInt(fingerPrintId, 10);
+
+        // Payload
+        const payload = {
+            DeviceMode: "signup",
+            FingerPrintCount: fingerprintCount,
+            GetUser: id,
+        };
+
+        axios
+            .post(`${apiUrl}/addFingerprintData`, payload)
+            .then((res) => {
+                console.log(res.data);
+                setConfirmDialogOpen2(true); // Open the modal
+
+                // Start checking if DeviceMode is "auth" after modal opens
+                const interval = setInterval(async () => {
+                    try {
+                        const response = await axios.get(`${apiUrl}/checkDeviceMode`);
+                        if (response.data.status === true) {
+                            // setConfirmDialogOpen2(false);
+                            setIsAdded(true);
+                            clearInterval(interval);
+                        }
+                    } catch (error) {
+                        console.error("Error checking device mode:", error);
+                    }
+                }, 3000);
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+    };
+
 
     const handleDeleteAccount = async () => {
         Swal.fire({
@@ -177,14 +239,44 @@ const ProfileDetailsMain = () => {
                                 </ul>
                             </div>
 
-                            <div className="profile-button-container">
-                                {!hasFingerprint ? (
-                                    <button className="follows" onClick={handleAddFingerprint}>Add Fingerprint</button>
-                                ) : (
-                                    <button className="follows" disabled>Fingerprint Added</button>
-                                )}
-                                <button className="follows delete" onClick={handleDeleteAccount}>Delete Profile</button>
-                            </div>
+                            <Dialog
+                                open={confirmDialogOpen2}
+                                onClose={() => setConfirmDialogOpen2(false)}
+                            >
+                                <DialogTitle>Add Fingerprint</DialogTitle>
+                                <DialogContent>
+                                    <DialogContentText>
+                                        Please place your finger on the fingerprint scanner to proceed with
+                                        the enrollment.
+                                    </DialogContentText>
+                                    <img
+                                        src="https://img.freepik.com/free-vector/fingerprint-concept-illustration_114360-3021.jpg?t=st=1729112904~exp=1729116504~hmac=bcca9675dafe916c816646555a8dea2e431b8449d3492548f7a8765b9c0d9715&w=900"
+                                        alt="Fingerprint Scanner"
+                                        style={{
+                                            width: "300px",
+                                            height: "300px",
+                                            margin: "20px auto",
+                                            display: "block",
+                                        }}
+                                    />
+                                    {isAdded ? (
+                                        <DialogContentText>
+                                            Successfully Added..!
+                                        </DialogContentText>
+                                    ) : (
+                                        <DialogContentText>
+                                            Processing... Please wait
+                                        </DialogContentText>
+                                    )}
+
+                                </DialogContent>
+                                <DialogActions>
+                                    <Button onClick={() => setConfirmDialogOpen2(false)}>Cancel</Button>
+                                    <Button color="primary" onClick={() => setConfirmDialogOpen2(false)} disabled={!isAdded}>
+                                        Ok
+                                    </Button>
+                                </DialogActions>
+                            </Dialog>
                         </div>
                     </div>
                 </div>

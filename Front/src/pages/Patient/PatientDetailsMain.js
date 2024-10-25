@@ -11,7 +11,9 @@ const PatientDetailsMain = () => {
     const [patients, setPatients] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
+
     const apiUrl = process.env.REACT_APP_API_BASE_URL;
+
 
     // Function to fetch all patients initially
     useEffect(() => {
@@ -79,6 +81,8 @@ const PatientDetailsMain = () => {
     const handleAdd = () => {
         navigate('/signup');
     };
+
+
 
     const generatePDFReport = () => {
         const doc = new jsPDF();

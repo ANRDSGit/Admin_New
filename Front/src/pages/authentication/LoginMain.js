@@ -16,14 +16,18 @@ const LoginMain = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(''); // Clear previous errors
+        console.log("Form submitted with credentials:", credentials); // Debugging line
         try {
             const response = await axios.post(`${apiUrl}/admin/login`, credentials);
+            console.log("API response:", response.data); // Debugging line
             localStorage.setItem('token', response.data.token); // Store JWT token
             navigate('/'); // Redirect to appointments page
         } catch (error) {
+            console.error("Error occurred:", error.response || error.message); // Debugging line
             setError(error.response?.data || 'An error occurred.'); // Display error message
         }
     };
+    
 
     return (
         <>
