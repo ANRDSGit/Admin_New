@@ -45,7 +45,7 @@ const App = () => {
                 <Routes>
                     
                     
-                    <Route path="/" element={<Home />} />
+                    <Route path="/home" element={<Home />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/course" exact element={<Course />} />
                     <Route path="/course-list" exact element={<CourseList />} />
@@ -58,7 +58,7 @@ const App = () => {
                     <Route path="/appointments" element={<Appointments />} />
                     <Route path="/profile/:userId" exact element={<Patient />} />
                     <Route path="/patients" exact element={<Patients />} />
-                    <Route path="/login" element={<Login />} />
+                    <Route path="/" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/contact" element={<Contact />} />
                     <Route path='*' element={<Error />} />
